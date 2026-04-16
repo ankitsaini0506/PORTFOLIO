@@ -1,0 +1,506 @@
+{
+  "info": {
+    "name": "━━━ AutomateIQ Agency Backend API ━━━",
+    "description": "Complete REST API — AutomateIQ Digital Agency Portfolio\nStack: Node.js + Express + Supabase + Cloudinary + Nodemailer\n\n42 endpoints | 7 folders\n\nSETUP:\n1. Set baseUrl = http://localhost:5000\n2. Run 1.1 (Admin Login) first → adminToken auto-sets in env\n3. Test each folder in order 1→7\n\nFLOW: Login → Agency → Projects (+ video upload) → Templates → Pricing → Leads → Health",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key":"baseUrl","value":"http://localhost:5000","type":"string"},
+    {"key":"adminToken","value":"","type":"string"},
+    {"key":"projectId","value":"","type":"string"},
+    {"key":"project2Id","value":"","type":"string"},
+    {"key":"templateId","value":"","type":"string"},
+    {"key":"pricingId","value":"","type":"string"},
+    {"key":"leadId","value":"","type":"string"}
+  ],
+  "item": [
+    {
+      "name": "━━━ FOLDER 1: 🔐 Admin Auth ━━━",
+      "item": [
+        {
+          "name": "1.1 POST /auth/login",
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": {"raw":"{{baseUrl}}/api/auth/login","host":["{{baseUrl}}"],"path":["api","auth","login"]},
+            "body": {"mode":"raw","raw":"{\n  \"email\": \"admin@automateiq.com\",\n  \"password\": \"admin123\"\n}"}
+          },
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const res = pm.response.json();",
+            "pm.test('success true', () => pm.expect(res.success).to.be.true);",
+            "pm.test('Token received', () => pm.expect(res.data.token).to.be.a('string'));",
+            "pm.environment.set('adminToken', res.data.token);",
+            "console.log('✅ adminToken auto-set in environment');"
+          ]}}]
+        },
+        {
+          "name": "1.2 GET /auth/profile",
+          "request": {
+            "method": "GET",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"}],
+            "url": {"raw":"{{baseUrl}}/api/auth/profile","host":["{{baseUrl}}"],"path":["api","auth","profile"]}
+          },
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has email', () => pm.expect(pm.response.json().data.email).to.be.a('string'));"
+          ]}}]
+        },
+        {
+          "name": "1.3 PUT /auth/profile (update name)",
+          "request": {
+            "method": "PUT",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"},{"key":"Content-Type","value":"application/json"}],
+            "url": {"raw":"{{baseUrl}}/api/auth/profile","host":["{{baseUrl}}"],"path":["api","auth","profile"]},
+            "body": {"mode":"raw","raw":"{\n  \"name\": \"AutomateIQ Admin\"\n}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "1.4 PUT /auth/change-password",
+          "request": {
+            "method": "PUT",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"},{"key":"Content-Type","value":"application/json"}],
+            "url": {"raw":"{{baseUrl}}/api/auth/change-password","host":["{{baseUrl}}"],"path":["api","auth","change-password"]},
+            "body": {"mode":"raw","raw":"{\n  \"old_password\": \"admin123\",\n  \"new_password\": \"admin123\"\n}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "1.5 POST /auth/logout",
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"}],
+            "url": {"raw":"{{baseUrl}}/api/auth/logout","host":["{{baseUrl}}"],"path":["api","auth","logout"]}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        }
+      ]
+    },
+    {
+      "name": "━━━ FOLDER 2: 🏢 Agency Info ━━━",
+      "item": [
+        {
+          "name": "2.1 GET /agency (public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw":"{{baseUrl}}/api/agency","host":["{{baseUrl}}"],"path":["api","agency"]}
+          },
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has name', () => pm.expect(pm.response.json().data.name).to.be.a('string'));"
+          ]}}]
+        },
+        {
+          "name": "2.2 PUT /agency (update info)",
+          "request": {
+            "method": "PUT",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"},{"key":"Content-Type","value":"application/json"}],
+            "url": {"raw":"{{baseUrl}}/api/agency","host":["{{baseUrl}}"],"path":["api","agency"]},
+            "body": {"mode":"raw","raw":"{\n  \"name\": \"AutomateIQ\",\n  \"tagline\": \"We build websites and apps that convert\",\n  \"description\": \"Digital agency specializing in modern web and mobile experiences\",\n  \"email\": \"hello@automateiq.com\",\n  \"phone\": \"+91 98765 43210\",\n  \"instagram_url\": \"https://instagram.com/automateiq\",\n  \"twitter_url\": \"https://twitter.com/automateiq\"\n}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "2.3 POST /agency/logo (upload logo — attach file)",
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"}],
+            "url": {"raw":"{{baseUrl}}/api/agency/logo","host":["{{baseUrl}}"],"path":["api","agency","logo"]},
+            "body": {"mode":"formdata","formdata":[{"key":"logo","type":"file","src":""}]}
+          },
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has Cloudinary URL', () => pm.expect(pm.response.json().data.logo_url).to.include('cloudinary.com'));"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "━━━ FOLDER 3: 🎬 Projects (Fan Card Deck) ━━━",
+      "item": [
+        {
+          "name": "3.1 POST /projects (E-Commerce Website)",
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"},{"key":"Content-Type","value":"application/json"}],
+            "url": {"raw":"{{baseUrl}}/api/projects","host":["{{baseUrl}}"],"path":["api","projects"]},
+            "body": {"mode":"raw","raw":"{\n  \"title\": \"E-Commerce Platform\",\n  \"description\": \"Full stack shopping app with payments and inventory\",\n  \"category\": \"website\",\n  \"tech_stack\": [\"React\", \"Node.js\", \"Stripe\", \"MongoDB\"],\n  \"live_url\": \"https://example-ecommerce.com\",\n  \"is_featured\": true,\n  \"sort_order\": 1\n}"}
+          },
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+            "const res = pm.response.json();",
+            "pm.test('success true', () => pm.expect(res.success).to.be.true);",
+            "pm.environment.set('projectId', res.data.id);",
+            "console.log('projectId set:', res.data.id);"
+          ]}}]
+        },
+        {
+          "name": "3.2 POST /projects (Fitness App)",
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"},{"key":"Content-Type","value":"application/json"}],
+            "url": {"raw":"{{baseUrl}}/api/projects","host":["{{baseUrl}}"],"path":["api","projects"]},
+            "body": {"mode":"raw","raw":"{\n  \"title\": \"Fitness Tracker App\",\n  \"description\": \"Mobile app for tracking workouts and nutrition\",\n  \"category\": \"app\",\n  \"tech_stack\": [\"React Native\", \"Supabase\", \"Expo\"],\n  \"live_url\": \"\",\n  \"is_featured\": true,\n  \"sort_order\": 2\n}"}
+          },
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+            "pm.environment.set('project2Id', pm.response.json().data.id);"
+          ]}}]
+        },
+        {
+          "name": "3.3 GET /projects (all public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw":"{{baseUrl}}/api/projects","host":["{{baseUrl}}"],"path":["api","projects"]}
+          },
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Is array', () => pm.expect(pm.response.json().data).to.be.an('array'));",
+            "pm.test('Has 2 projects', () => pm.expect(pm.response.json().data.length).to.equal(2));"
+          ]}}]
+        },
+        {
+          "name": "3.4 GET /projects?category=website",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw":"{{baseUrl}}/api/projects?category=website","host":["{{baseUrl}}"],"path":["api","projects"],"query":[{"key":"category","value":"website"}]}
+          },
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('All website category', () => { pm.response.json().data.forEach(p => pm.expect(p.category).to.equal('website')); });"
+          ]}}]
+        },
+        {
+          "name": "3.5 GET /projects/:id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw":"{{baseUrl}}/api/projects/{{projectId}}","host":["{{baseUrl}}"],"path":["api","projects","{{projectId}}"]}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "3.6 PUT /projects/:id (update)",
+          "request": {
+            "method": "PUT",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"},{"key":"Content-Type","value":"application/json"}],
+            "url": {"raw":"{{baseUrl}}/api/projects/{{projectId}}","host":["{{baseUrl}}"],"path":["api","projects","{{projectId}}"]},
+            "body": {"mode":"raw","raw":"{\n  \"title\": \"E-Commerce Platform (Updated)\",\n  \"description\": \"Updated description\",\n  \"tech_stack\": [\"React\", \"Node.js\", \"Stripe\"]\n}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "3.7 POST /projects/:id/video (Cloudinary — attach .mp4)",
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"}],
+            "url": {"raw":"{{baseUrl}}/api/projects/{{projectId}}/video","host":["{{baseUrl}}"],"path":["api","projects","{{projectId}}","video"]},
+            "body": {"mode":"formdata","formdata":[{"key":"video","type":"file","src":""}]}
+          },
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const res = pm.response.json();",
+            "pm.test('Has Cloudinary video URL', () => pm.expect(res.data.video_url).to.include('cloudinary.com'));",
+            "console.log('video_url:', res.data.video_url);"
+          ]}}]
+        },
+        {
+          "name": "3.8 POST /projects/:id/thumbnail (Cloudinary — attach image)",
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"}],
+            "url": {"raw":"{{baseUrl}}/api/projects/{{projectId}}/thumbnail","host":["{{baseUrl}}"],"path":["api","projects","{{projectId}}","thumbnail"]},
+            "body": {"mode":"formdata","formdata":[{"key":"thumbnail","type":"file","src":""}]}
+          },
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has Cloudinary image URL', () => pm.expect(pm.response.json().data.thumbnail_url).to.include('cloudinary.com'));"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "━━━ FOLDER 4: 🖼️ Templates ━━━",
+      "item": [
+        {
+          "name": "4.1 POST /templates (Business Pro — website)",
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"},{"key":"Content-Type","value":"application/json"}],
+            "url": {"raw":"{{baseUrl}}/api/templates","host":["{{baseUrl}}"],"path":["api","templates"]},
+            "body": {"mode":"raw","raw":"{\n  \"name\": \"Business Pro\",\n  \"description\": \"Clean professional website for agencies\",\n  \"category\": \"website\",\n  \"preview_url\": \"https://example.com/preview/business-pro\",\n  \"tags\": [\"business\", \"clean\", \"modern\"],\n  \"is_active\": true,\n  \"sort_order\": 1\n}"}
+          },
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+            "pm.environment.set('templateId', pm.response.json().data.id);"
+          ]}}]
+        },
+        {
+          "name": "4.2 POST /templates (Social Feed — app)",
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"},{"key":"Content-Type","value":"application/json"}],
+            "url": {"raw":"{{baseUrl}}/api/templates","host":["{{baseUrl}}"],"path":["api","templates"]},
+            "body": {"mode":"raw","raw":"{\n  \"name\": \"Social Feed App\",\n  \"description\": \"Instagram-style feed with stories UI\",\n  \"category\": \"app\",\n  \"preview_url\": \"\",\n  \"tags\": [\"social\", \"feed\", \"modern\"],\n  \"is_active\": true,\n  \"sort_order\": 1\n}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));"]}}]
+        },
+        {
+          "name": "4.3 GET /templates (all public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw":"{{baseUrl}}/api/templates","host":["{{baseUrl}}"],"path":["api","templates"]}
+          },
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Is array', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+          ]}}]
+        },
+        {
+          "name": "4.4 GET /templates?category=website",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw":"{{baseUrl}}/api/templates?category=website","host":["{{baseUrl}}"],"path":["api","templates"],"query":[{"key":"category","value":"website"}]}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "4.5 POST /templates/:id/image (Cloudinary — attach image)",
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"}],
+            "url": {"raw":"{{baseUrl}}/api/templates/{{templateId}}/image","host":["{{baseUrl}}"],"path":["api","templates","{{templateId}}","image"]},
+            "body": {"mode":"formdata","formdata":[{"key":"image","type":"file","src":""}]}
+          },
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has Cloudinary URL', () => pm.expect(pm.response.json().data.image_url).to.include('cloudinary.com'));"
+          ]}}]
+        },
+        {
+          "name": "4.6 PUT /templates/:id (update)",
+          "request": {
+            "method": "PUT",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"},{"key":"Content-Type","value":"application/json"}],
+            "url": {"raw":"{{baseUrl}}/api/templates/{{templateId}}","host":["{{baseUrl}}"],"path":["api","templates","{{templateId}}"]},
+            "body": {"mode":"raw","raw":"{\n  \"name\": \"Business Pro (Updated)\",\n  \"is_active\": true\n}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        }
+      ]
+    },
+    {
+      "name": "━━━ FOLDER 5: 💰 Pricing Plans ━━━",
+      "item": [
+        {
+          "name": "5.1 POST /pricing (Website Starter)",
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"},{"key":"Content-Type","value":"application/json"}],
+            "url": {"raw":"{{baseUrl}}/api/pricing","host":["{{baseUrl}}"],"path":["api","pricing"]},
+            "body": {"mode":"raw","raw":"{\n  \"name\": \"Starter\",\n  \"category\": \"website\",\n  \"price\": 15000,\n  \"currency\": \"INR\",\n  \"billing_cycle\": \"one-time\",\n  \"features\": [\"5 Pages\", \"Mobile Responsive\", \"Contact Form\", \"Basic SEO\", \"1 Month Support\"],\n  \"is_popular\": false,\n  \"sort_order\": 1\n}"}
+          },
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+            "pm.environment.set('pricingId', pm.response.json().data.id);"
+          ]}}]
+        },
+        {
+          "name": "5.2 POST /pricing (Website Pro — Popular)",
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"},{"key":"Content-Type","value":"application/json"}],
+            "url": {"raw":"{{baseUrl}}/api/pricing","host":["{{baseUrl}}"],"path":["api","pricing"]},
+            "body": {"mode":"raw","raw":"{\n  \"name\": \"Pro\",\n  \"category\": \"website\",\n  \"price\": 35000,\n  \"currency\": \"INR\",\n  \"billing_cycle\": \"one-time\",\n  \"features\": [\"Unlimited Pages\", \"Custom Design\", \"CMS Integration\", \"Advanced SEO\", \"E-Commerce Ready\", \"3 Months Support\"],\n  \"is_popular\": true,\n  \"sort_order\": 2\n}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));"]}}]
+        },
+        {
+          "name": "5.3 POST /pricing (App Basic)",
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"},{"key":"Content-Type","value":"application/json"}],
+            "url": {"raw":"{{baseUrl}}/api/pricing","host":["{{baseUrl}}"],"path":["api","pricing"]},
+            "body": {"mode":"raw","raw":"{\n  \"name\": \"Basic\",\n  \"category\": \"app\",\n  \"price\": 50000,\n  \"currency\": \"INR\",\n  \"billing_cycle\": \"one-time\",\n  \"features\": [\"iOS + Android\", \"5 Screens\", \"Basic Auth\", \"Push Notifications\", \"1 Month Support\"],\n  \"is_popular\": false,\n  \"sort_order\": 1\n}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));"]}}]
+        },
+        {
+          "name": "5.4 POST /pricing (App Premium — Popular)",
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"},{"key":"Content-Type","value":"application/json"}],
+            "url": {"raw":"{{baseUrl}}/api/pricing","host":["{{baseUrl}}"],"path":["api","pricing"]},
+            "body": {"mode":"raw","raw":"{\n  \"name\": \"Premium\",\n  \"category\": \"app\",\n  \"price\": 120000,\n  \"currency\": \"INR\",\n  \"billing_cycle\": \"one-time\",\n  \"features\": [\"iOS + Android\", \"Unlimited Screens\", \"Custom Auth + Social Login\", \"Payments Integration\", \"Admin Dashboard\", \"3 Months Support\"],\n  \"is_popular\": true,\n  \"sort_order\": 2\n}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));"]}}]
+        },
+        {
+          "name": "5.5 GET /pricing?category=website (public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw":"{{baseUrl}}/api/pricing?category=website","host":["{{baseUrl}}"],"path":["api","pricing"],"query":[{"key":"category","value":"website"}]}
+          },
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has 2 website plans', () => pm.expect(pm.response.json().data.length).to.equal(2));"
+          ]}}]
+        },
+        {
+          "name": "5.6 GET /pricing?category=app (public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw":"{{baseUrl}}/api/pricing?category=app","host":["{{baseUrl}}"],"path":["api","pricing"],"query":[{"key":"category","value":"app"}]}
+          },
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has 2 app plans', () => pm.expect(pm.response.json().data.length).to.equal(2));"
+          ]}}]
+        },
+        {
+          "name": "5.7 PUT /pricing/:id (update price)",
+          "request": {
+            "method": "PUT",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"},{"key":"Content-Type","value":"application/json"}],
+            "url": {"raw":"{{baseUrl}}/api/pricing/{{pricingId}}","host":["{{baseUrl}}"],"path":["api","pricing","{{pricingId}}"]},
+            "body": {"mode":"raw","raw":"{\n  \"price\": 18000,\n  \"features\": [\"5 Pages\", \"Mobile Responsive\", \"Contact Form\", \"Basic SEO\", \"2 Months Support\"]\n}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        }
+      ]
+    },
+    {
+      "name": "━━━ FOLDER 6: 📩 Leads (Contact Form) ━━━",
+      "item": [
+        {
+          "name": "6.1 POST /leads (public — from Modal.jsx)",
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": {"raw":"{{baseUrl}}/api/leads","host":["{{baseUrl}}"],"path":["api","leads"]},
+            "body": {"mode":"raw","raw":"{\n  \"name\": \"Rahul Sharma\",\n  \"email\": \"rahul@example.com\",\n  \"phone\": \"9876543210\",\n  \"budget\": \"₹50,000 - ₹1,00,000\",\n  \"idea\": \"I want an e-commerce website for my clothing brand\",\n  \"target\": \"Business Pro\"\n}"}
+          },
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const res = pm.response.json();",
+            "pm.test('success true', () => pm.expect(res.success).to.be.true);",
+            "pm.environment.set('leadId', res.data.id);",
+            "console.log('leadId set:', res.data.id);",
+            "console.log('✅ Check your ADMIN_EMAIL inbox for lead notification email');"
+          ]}}]
+        },
+        {
+          "name": "6.2 POST /leads (missing name — should fail 400)",
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": {"raw":"{{baseUrl}}/api/leads","host":["{{baseUrl}}"],"path":["api","leads"]},
+            "body": {"mode":"raw","raw":"{\n  \"email\": \"test@test.com\"\n}"}
+          },
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status 400 (validation)', () => pm.response.to.have.status(400));",
+            "pm.test('success false', () => pm.expect(pm.response.json().success).to.be.false);"
+          ]}}]
+        },
+        {
+          "name": "6.3 GET /leads (admin only)",
+          "request": {
+            "method": "GET",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"}],
+            "url": {"raw":"{{baseUrl}}/api/leads","host":["{{baseUrl}}"],"path":["api","leads"]}
+          },
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Is array', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+          ]}}]
+        },
+        {
+          "name": "6.4 GET /leads without token → 401 (security check)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw":"{{baseUrl}}/api/leads","host":["{{baseUrl}}"],"path":["api","leads"]}
+          },
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status 401 (unauthorized)', () => pm.response.to.have.status(401));"
+          ]}}]
+        },
+        {
+          "name": "6.5 PATCH /leads/:id/status (mark contacted)",
+          "request": {
+            "method": "PATCH",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"},{"key":"Content-Type","value":"application/json"}],
+            "url": {"raw":"{{baseUrl}}/api/leads/{{leadId}}/status","host":["{{baseUrl}}"],"path":["api","leads","{{leadId}}","status"]},
+            "body": {"mode":"raw","raw":"{\n  \"status\": \"contacted\"\n}"}
+          },
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('status=contacted', () => pm.expect(pm.response.json().data.status).to.equal('contacted'));"
+          ]}}]
+        },
+        {
+          "name": "6.6 GET /leads?status=new (filter)",
+          "request": {
+            "method": "GET",
+            "header": [{"key":"Authorization","value":"Bearer {{adminToken}}"}],
+            "url": {"raw":"{{baseUrl}}/api/leads?status=new","host":["{{baseUrl}}"],"path":["api","leads"],"query":[{"key":"status","value":"new"}]}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        }
+      ]
+    },
+    {
+      "name": "━━━ FOLDER 7: 🏥 Health & Security ━━━",
+      "item": [
+        {
+          "name": "7.1 GET /health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw":"{{baseUrl}}/health","host":["{{baseUrl}}"],"path":["health"]}
+          },
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('success true', () => pm.expect(pm.response.json().success).to.be.true);"
+          ]}}]
+        },
+        {
+          "name": "7.2 GET /unknown-route → 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw":"{{baseUrl}}/api/nonexistent","host":["{{baseUrl}}"],"path":["api","nonexistent"]}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 404', () => pm.response.to.have.status(404));"]}}]
+        },
+        {
+          "name": "7.3 GET /api/projects/:id with bad id → 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw":"{{baseUrl}}/api/projects/00000000-0000-0000-0000-000000000000","host":["{{baseUrl}}"],"path":["api","projects","00000000-0000-0000-0000-000000000000"]}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 404', () => pm.response.to.have.status(404));"]}}]
+        },
+        {
+          "name": "7.4 PUT /api/agency with bad token → 401",
+          "request": {
+            "method": "PUT",
+            "header": [{"key":"Authorization","value":"Bearer bad_token_here"},{"key":"Content-Type","value":"application/json"}],
+            "url": {"raw":"{{baseUrl}}/api/agency","host":["{{baseUrl}}"],"path":["api","agency"]},
+            "body": {"mode":"raw","raw":"{}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 401', () => pm.response.to.have.status(401));"]}}]
+        }
+      ]
+    }
+  ]
+}
