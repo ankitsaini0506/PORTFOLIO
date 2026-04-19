@@ -24,8 +24,26 @@ required.forEach(key => {
 const app = express()
 
 // ── Middleware ──────────────────────────────────────────
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'https://automateiq.in',
+  'https://www.automateiq.in',
+  process.env.FRONTEND_URL,
+].filter(Boolean)
+
 app.use(helmet())
-app.use(cors({ origin: process.env.FRONTEND_URL || '*' }))
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}))
 app.use(morgan('dev'))
 app.use(express.json())
 
@@ -60,6 +78,11 @@ app.use('/api/pricing', require('./routes/pricing'))
 app.use('/api/templates', require('./routes/templates'))
 app.use('/api/leads', require('./routes/leads'))
 app.use('/api/settings', require('./routes/settings'))
+
+app.use('/api/contact',      require('./routes/contact'))
+app.use('/api/testimonials', require('./routes/testimonials'))
+app.use('/api/team',         require('./routes/team'))
+app.use('/api/stats',        require('./routes/stats'))
 
 // alias so Postman collection works
 app.use('/api/agency', require('./routes/settings'))
