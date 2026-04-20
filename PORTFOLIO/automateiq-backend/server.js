@@ -79,6 +79,7 @@ app.use('/api/templates', require('./routes/templates'))
 app.use('/api/leads', require('./routes/leads'))
 app.use('/api/settings', require('./routes/settings'))
 
+app.use('/api/admin',        require('./routes/admin'))
 app.use('/api/contact',      require('./routes/contact'))
 app.use('/api/testimonials', require('./routes/testimonials'))
 app.use('/api/team',         require('./routes/team'))
