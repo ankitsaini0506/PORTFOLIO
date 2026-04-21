@@ -78,8 +78,8 @@ router.post('/', verifyToken, multiStorage.fields([{ name: 'video' }, { name: 't
 
     const tech_stack = JSON.parse(req.body.tech_stack || '[]')
 
-    let video_url = null
-    let thumbnail_url = null
+    let video_url     = req.body.video_url     || null
+    let thumbnail_url = req.body.thumbnail_url || null
 
     if (req.files?.video?.[0]) {
       const result = await uploadToCloudinary(req.files.video[0].buffer, 'automateiq/videos', 'video')
@@ -128,7 +128,7 @@ router.put('/:id', verifyToken, multiStorage.fields([{ name: 'video' }, { name: 
       return res.status(404).json({ success: false, message: 'Project not found' })
 
     const updates = {}
-    const fields = ['title', 'description', 'category', 'live_url', 'is_featured', 'sort_order']
+    const fields = ['title', 'description', 'category', 'live_url', 'is_featured', 'sort_order', 'video_url', 'thumbnail_url']
     fields.forEach(f => { if (req.body[f] !== undefined) updates[f] = req.body[f] })
     if (req.body.tech_stack) updates.tech_stack = JSON.parse(req.body.tech_stack)
     if (req.body.sort_order) updates.sort_order = parseInt(req.body.sort_order)
